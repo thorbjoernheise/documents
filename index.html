@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>edubba</title>
+
+    <!-- Bootstrap CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.2/dropzone.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #222;
+            color: #eee;
+            font-family: "Inter", sans-serif;
+            font-weight: 400;
+            padding: 20px;
+            text-align: center;
+            font-variation-settings: "slnt" 0;
+        }
+
+        h1 {
+            color: #8a63d2;
+            font-weight: 500;
+        }
+
+        .content-container {
+            margin-top: 2rem;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 2rem;
+            border-radius: 10px;
+            background-color: #333;
+            width: 70%;
+        }
+
+        .dropzone {
+            border: 2px dashed #8a63d2;
+            border-radius: 10px;
+            background-color: #333;
+            color: #eee;
+            padding: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 50%;
+            width: 50%;
+            transition: border-color 0.3s ease, opacity 0.3s ease;
+        }
+
+        .dropzone:hover {
+            border-color: #fff;
+            opacity: 0.8;
+        }
+
+        .dz-message {
+            font-size: 20px;
+            font-weight: 300;
+        }
+        .card-container {
+            margin-top: 2rem;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 2rem;
+            border-radius: 10px;
+            background-color: #333;
+            width: 70%;
+            align-items: center;
+        }
+
+        /* Card style */
+        .card {
+            background-color: #444;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: auto;
+            width: 30%;
+            display: inline-block;
+            margin-right: 1rem;
+            opacity: 0.8;
+        }
+        .card:hover{
+            opacity: 1.0;
+        }
+
+        .card-title {
+            color: #8a63d2;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            font-size: small;
+        }
+
+        .card-thumbnail {
+            width: 100%;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-delete {
+            color: #ff4d4d;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .card-delete:hover {
+            text-decoration: underline;
+            color: #f57575;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dokumente</h1>
+    <div class="content-container">
+        <form action="/docs/upload/" method="post" class="dropzone" id="myDropzone" enctype="multipart/form-data">
+            <div class="dz-message">Drop your PDF file here or click to upload.</div>
+        </form>
+    </div>
+    <div class="card-container" id="document-container">
+        <!-- Cards will be dynamically inserted here -->
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.2/min/dropzone.min.js"></script>
+    <script>
+        Dropzone.autoDiscover = false;
+
+        // Funktion zum kontinuierlichen Abrufen und Aktualisieren der Dokumente
+        async function updateDocumentsPeriodically() {
+            setInterval(async () => {
+                await getAndPopulateDocuments(); 
+            }, 5000); // Aktualisierungsintervall in Millisekunden 
+        }
+
+        // Funktion zum Abrufen von Dokumenten und Aktualisieren der Karten
+        async function getAndPopulateDocuments() {
+            const response = await fetch('/docs/');
+            const data = await response.json();
+
+            const documentContainer = document.getElementById('document-container');
+            documentContainer.innerHTML = '';
+
+            data.forEach(doc => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+
+                card.innerHTML = `
+                    <div class="card-title">${doc.filename}</div>
+                    <img class="card-thumbnail" src="${doc.thumbnail}" alt="Thumbnail">
+                    <div class="card-delete">
+                        <a href="/docs/delete/${doc.id}" class="text-red-500">
+                            <svg class="w-6 h-6 text-red-500 hover:text-red-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
+                            </svg>
+                        </a>
+                    </div>
+                `;
+
+                documentContainer.appendChild(card);
+            });
+        }
+
+        // Nachdem die DOM-Inhalte geladen wurden, starte die kontinuierliche Aktualisierung
+        document.addEventListener('DOMContentLoaded', function () {
+            updateDocumentsPeriodically();
+        });
+
+        // Initialisierung der Dropzone
+        document.addEventListener('DOMContentLoaded', function () {
+            var myDropzone = new Dropzone("#myDropzone", {
+                paramName: "file",
+                maxFilesize: 2,
+                acceptedFiles: ".pdf",
+                dictDefaultMessage: "Drop your PDF file here or click to upload.",
+                dictFallbackMessage: "Your browser does not support drag'n'drop file uploads.",
+                dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
+                dictInvalidFileType: "You can't upload files of this type.",
+                dictResponseError: "Server responded with {{statusCode}} code.",
+                dictCancelUpload: "Cancel upload",
+                dictCancelUploadConfirmation: "Are you sure you want to cancel this upload?",
+                dictRemoveFile: "Remove file",
+                dictMaxFilesExceeded: "You can not upload any more files.",
+                // Erfolgsereignis nach dem Hochladen einer Datei
+                success: function(file, response) {
+                    getAndPopulateDocuments(); // Tabelle nach erfolgreichem Upload aktualisieren
+                }
+            });
+        });
+    </script>
+</body>
+</html>
